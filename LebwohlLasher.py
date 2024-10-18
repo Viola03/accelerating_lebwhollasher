@@ -122,7 +122,7 @@ def savedat(arr,nsteps,Ts,runtime,ratio,energy,order,nmax):
     print("# Run time (s):        {:8.6f}".format(runtime),file=FileOut)
     print("#=====================================================",file=FileOut)
     print("# MC step:  Ratio:     Energy:   Order:",file=FileOut)
-    print("#=====================================================",file=FileOut)
+    print("#================t====================================",file=FileOut)
     # Write the columns of data
     for i in range(nsteps+1):
         print("   {:05d}    {:6.4f} {:12.4f}  {:6.4f} ".format(i,ratio[i],energy[i],order[i]),file=FileOut)
