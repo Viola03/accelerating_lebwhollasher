@@ -1,0 +1,58 @@
+         7705 function calls in 0.021 seconds
+
+   Ordered by: internal time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      101    0.005    0.000    0.011    0.000 C:\Users\viola\miniconda3\Lib\site-packages\numpy\linalg\linalg.py:1193(eig)
+      503    0.004    0.000    0.004    0.000 {method 'reduce' of 'numpy.ufunc' objects}
+      101    0.002    0.000    0.002    0.000 C:\Users\viola\miniconda3\Lib\site-packages\numpy\core\numeric.py:67(zeros_like)
+      301    0.002    0.000    0.004    0.000 C:\Users\viola\miniconda3\Lib\site-packages\numpy\core\fromnumeric.py:71(_wrapreduction)
+      101    0.001    0.000    0.002    0.000 C:\Users\viola\miniconda3\Lib\site-packages\numpy\core\shape_base.py:219(vstack)
+      101    0.001    0.000    0.002    0.000 C:\Users\viola\miniconda3\Lib\site-packages\numpy\lib\twodim_base.py:158(eye)
+      301    0.001    0.000    0.001    0.000 {built-in method builtins.getattr}
+      101    0.000    0.000    0.001    0.000 C:\Users\viola\miniconda3\Lib\site-packages\numpy\core\shape_base.py:81(atleast_2d)
+      101    0.000    0.000    0.002    0.000 C:\Users\viola\miniconda3\Lib\site-packages\numpy\core\fromnumeric.py:2421(all)
+      101    0.000    0.000    0.001    0.000 C:\Users\viola\miniconda3\Lib\site-packages\numpy\linalg\linalg.py:159(_commonType)
+      101    0.000    0.000    0.002    0.000 C:\Users\viola\miniconda3\Lib\site-packages\numpy\linalg\linalg.py:215(_assert_finite)
+      200    0.000    0.000    0.003    0.000 C:\Users\viola\miniconda3\Lib\site-packages\numpy\core\fromnumeric.py:2979(prod)
+      101    0.000    0.000    0.000    0.000 C:\Users\viola\miniconda3\Lib\site-packages\numpy\linalg\linalg.py:135(_makearray)
+      101    0.000    0.000    0.002    0.000 {method 'all' of 'numpy.ndarray' objects}
+      202    0.000    0.000    0.000    0.000 {built-in method numpy.zeros}
+      202    0.000    0.000    0.000    0.000 {method 'astype' of 'numpy.ndarray' objects}
+      101    0.000    0.000    0.000    0.000 C:\Users\viola\miniconda3\Lib\site-packages\numpy\linalg\linalg.py:209(_assert_stacked_square)
+      101    0.000    0.000    0.000    0.000 C:\Users\viola\miniconda3\Lib\site-packages\numpy\core\shape_base.py:215(_vhstack_dispatcher)
+      101    0.000    0.000    0.000    0.000 C:\Users\viola\miniconda3\Lib\site-packages\numpy\linalg\linalg.py:130(get_linalg_error_extobj)
+      101    0.000    0.000    0.000    0.000 {built-in method builtins.hasattr}
+      101    0.000    0.000    0.000    0.000 C:\Users\viola\miniconda3\Lib\site-packages\numpy\core\shape_base.py:207(_arrays_for_stack_dispatcher)
+      101    0.000    0.000    0.000    0.000 C:\Users\viola\miniconda3\Lib\site-packages\numpy\linalg\linalg.py:203(_assert_stacked_2d)
+      303    0.000    0.000    0.000    0.000 {method 'append' of 'list' objects}
+      202    0.000    0.000    0.000    0.000 C:\Users\viola\miniconda3\Lib\site-packages\numpy\linalg\linalg.py:153(_realType)
+      101    0.000    0.000    0.001    0.000 C:\Users\viola\miniconda3\Lib\site-packages\numpy\core\_methods.py:61(_all)
+      101    0.000    0.000    0.000    0.000 {built-in method __new__ of type object at 0x00007FFF0B3326E0}
+      301    0.000    0.000    0.000    0.000 {method 'items' of 'dict' objects}
+      220    0.000    0.000    0.000    0.000 {built-in method _codecs.charmap_encode}
+      101    0.000    0.000    0.001    0.000 C:\Users\viola\miniconda3\Lib\site-packages\numpy\core\_methods.py:39(_amax)
+      303    0.000    0.000    0.000    0.000 C:\Users\viola\miniconda3\Lib\site-packages\numpy\linalg\linalg.py:140(isComplexType)
+      101    0.000    0.000    0.000    0.000 <string>:1(<lambda>)
+      220    0.000    0.000    0.000    0.000 C:\Users\viola\miniconda3\Lib\encodings\cp1252.py:18(encode)
+      303    0.000    0.000    0.000    0.000 {built-in method numpy.asanyarray}
+      404    0.000    0.000    0.000    0.000 {built-in method builtins.issubclass}
+      202    0.000    0.000    0.000    0.000 {built-in method _operator.index}
+      202    0.000    0.000    0.000    0.000 {method 'get' of 'dict' objects}
+      101    0.000    0.000    0.000    0.000 C:\Users\viola\miniconda3\Lib\site-packages\numpy\linalg\linalg.py:488(_unary_dispatcher)
+      101    0.000    0.000    0.000    0.000 {built-in method numpy.asarray}
+      101    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+      101    0.000    0.000    0.000    0.000 {method '__array_prepare__' of 'numpy.ndarray' objects}
+      101    0.000    0.000    0.000    0.000 {built-in method builtins.isinstance}
+      200    0.000    0.000    0.000    0.000 C:\Users\viola\miniconda3\Lib\site-packages\numpy\core\fromnumeric.py:2974(_prod_dispatcher)
+      101    0.000    0.000    0.000    0.000 C:\Users\viola\miniconda3\Lib\site-packages\numpy\core\multiarray.py:85(empty_like)
+      101    0.000    0.000    0.000    0.000 C:\Users\viola\miniconda3\Lib\site-packages\numpy\core\fromnumeric.py:2416(_all_dispatcher)
+      101    0.000    0.000    0.000    0.000 C:\Users\viola\miniconda3\Lib\site-packages\numpy\core\multiarray.py:1080(copyto)
+      101    0.000    0.000    0.000    0.000 C:\Users\viola\miniconda3\Lib\site-packages\numpy\core\numeric.py:63(_zeros_like_dispatcher)
+      101    0.000    0.000    0.000    0.000 C:\Users\viola\miniconda3\Lib\site-packages\numpy\core\multiarray.py:153(concatenate)
+        1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+      101    0.000    0.000    0.000    0.000 C:\Users\viola\miniconda3\Lib\site-packages\numpy\core\shape_base.py:77(_atleast_2d_dispatcher)
+        3    0.000    0.000    0.000    0.000 C:\Users\viola\miniconda3\Lib\site-packages\numpy\core\_internal.py:920(npy_ctypes_check)
+        1    0.000    0.000    0.000    0.000 <frozen codecs>:186(__init__)
+
+
