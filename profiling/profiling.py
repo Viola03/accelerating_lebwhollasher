@@ -1,10 +1,10 @@
 import cProfile
 import pstats
 import io
-from LebwohlLasher import main
+from LebwohlLasherNumba import main
 
 def profile():
-    program = "LebwholLasher.py"
+    program = "LebwholLasherNumba.py"
     nsteps = 100
     nmax = 50
     temp = 1

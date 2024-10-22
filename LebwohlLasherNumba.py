@@ -33,7 +33,7 @@ from numba import njit, prange, jit
 
 
 #=======================================================================
-@jit
+@njit
 def initdat(nmax):
     """
     Arguments:
@@ -132,7 +132,7 @@ def savedat(arr,nsteps,Ts,runtime,ratio,energy,order,nmax):
         print("   {:05d}    {:6.4f} {:12.4f}  {:6.4f} ".format(i,ratio[i],energy[i],order[i]),file=FileOut)
     FileOut.close()
 #=======================================================================
-@jit
+@njit
 def one_energy(arr,ix,iy,nmax):
     """
     Arguments:
@@ -167,7 +167,7 @@ def one_energy(arr,ix,iy,nmax):
     en += 0.5*(1.0 - 3.0*np.cos(ang)**2)
     return en
 #=======================================================================
-@jit
+@njit
 def all_energy(arr,nmax):
     """
     Arguments:
@@ -185,7 +185,7 @@ def all_energy(arr,nmax):
             enall += one_energy(arr,i,j,nmax)
     return enall
 #=======================================================================
-@jit
+@njit
 def get_order(arr,nmax):
     """
     Arguments:
@@ -214,6 +214,33 @@ def get_order(arr,nmax):
     eigenvalues,eigenvectors = np.linalg.eig(Qab)
     return eigenvalues.max()
 #=======================================================================
+
+#Work around to random.normal being unsupported by Numba.. may end up being more computationally expensive and therefore negate the effect anyway
+@jit(nopython=True)
+def box_muller_normal(scale, nmax):
+    # Create an empty array to store the result
+    arr = np.empty((nmax, nmax))
+    
+    for i in range(0, nmax, 2):   # Loop in steps of 2
+        for j in range(nmax):
+            # Generate two uniform random numbers u1, u2
+            u1 = np.random.uniform()
+            u2 = np.random.uniform()
+            
+            # Apply Box-Muller transform to generate two normal values
+            z0 = np.sqrt(-2.0 * np.log(u1)) * np.cos(2.0 * np.pi * u2)
+            z1 = np.sqrt(-2.0 * np.log(u1)) * np.sin(2.0 * np.pi * u2)
+            
+            # Scale by the standard deviation
+            arr[i, j] = z0 * scale
+            if i + 1 < nmax:
+                arr[i + 1, j] = z1 * scale
+                
+    return arr
+
+#=======================================================================
+
+@njit(parallel=True)
 def MC_step(arr,Ts,nmax):
     """
     Arguments:
@@ -237,10 +264,17 @@ def MC_step(arr,Ts,nmax):
     # with temperature.
     scale=0.1+Ts
     accept = 0
+    
     xran = np.random.randint(0,high=nmax, size=(nmax,nmax))
     yran = np.random.randint(0,high=nmax, size=(nmax,nmax))
-    aran = np.random.normal(scale=scale, size=(nmax,nmax))
-    for i in range(nmax):
+    
+    #Unsupported by numba it seems
+    # aran = np.random.normal(scale=scale, size=(nmax,nmax))
+    
+    aran = box_muller_normal(scale, nmax)
+    
+    #prange for parallel loop
+    for i in prange(nmax):
         for j in range(nmax):
             ix = xran[i,j]
             iy = yran[i,j]

@@ -5,7 +5,7 @@ $sizes = @(10, 25, 45, 100, 210, 460, 1000, 2150, 4640, 10000)
 
 # Loop over each size and run the basic script
 foreach ($size in $sizes) {
-    $outputFile = "$outputDir\numbajit.txt"
+    $outputFile = "$outputDir\numba-parallelMC.txt"
     Write-Output "Running: python .\LebwohlLasherNumba.py 50 $size 0.5 0"
     $output = python .\LebwohlLasherNumba.py 50 $size 0.5 0 
     $output | Out-File -FilePath $outputFile -Append
