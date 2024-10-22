@@ -29,7 +29,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
+from numba import njit, prange, jit
+
+
 #=======================================================================
+@jit
 def initdat(nmax):
     """
     Arguments:
@@ -128,6 +132,7 @@ def savedat(arr,nsteps,Ts,runtime,ratio,energy,order,nmax):
         print("   {:05d}    {:6.4f} {:12.4f}  {:6.4f} ".format(i,ratio[i],energy[i],order[i]),file=FileOut)
     FileOut.close()
 #=======================================================================
+@jit
 def one_energy(arr,ix,iy,nmax):
     """
     Arguments:
@@ -162,6 +167,7 @@ def one_energy(arr,ix,iy,nmax):
     en += 0.5*(1.0 - 3.0*np.cos(ang)**2)
     return en
 #=======================================================================
+@jit
 def all_energy(arr,nmax):
     """
     Arguments:
@@ -179,6 +185,7 @@ def all_energy(arr,nmax):
             enall += one_energy(arr,i,j,nmax)
     return enall
 #=======================================================================
+@jit
 def get_order(arr,nmax):
     """
     Arguments:
@@ -253,6 +260,30 @@ def MC_step(arr,Ts,nmax):
                 else:
                     arr[ix,iy] -= ang
     return accept/(nmax*nmax)
+  
+  
+    #njit version?
+    # for i in range(nmax):
+    #     for j in range(nmax):
+    #         ix = rng.integers(0, nmax) #Implementing Numba's random number generator
+    #         iy = rng.integers(0, nmax)
+    #         ang = rng.normal(0, scale)
+    #         en0 = one_energy(arr,ix,iy,nmax)
+    #         arr[ix,iy] += ang
+    #         en1 = one_energy(arr,ix,iy,nmax)
+    #         if en1<=en0:
+    #             accept += 1
+    #         else:
+    #         # Now apply the Monte Carlo test - compare
+    #         # exp( -(E_new - E_old) / T* ) >= rand(0,1)
+    #             boltz = np.exp( -(en1 - en0) / Ts )
+
+    #             if boltz >= np.random.uniform(0.0,1.0):
+    #                 accept += 1
+    #             else:
+    #                 arr[ix,iy] -= ang
+    # return accept/(nmax*nmax)
+  
 #=======================================================================
 def main(program, nsteps, nmax, temp, pflag):
     """
