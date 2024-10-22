@@ -1,14 +1,3 @@
-Introduction
-
-Validation (?)
-
-Profiling
-
-Testing Strategies
-
-Optimisations
-Cython
-OpenMP
-Numpy Vectorisation
-Numba
-MPI4PY
+Numba Implementation
+Initially simply adding @jit decorator
+Final version with parallel implementation
