@@ -1,0 +1,7 @@
+# Byte compiled / dist / packaging
+
+__pycache__/
+build/
+ProjectBrief.pdfS
+
+# Outputs (?)
