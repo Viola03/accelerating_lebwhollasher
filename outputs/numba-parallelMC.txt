@@ -1,7 +1,0 @@
-.\LebwohlLasherNumba.py: Size: 10, Steps: 50, T*: 0.500: Order: 0.408, Time: 2.072962 s
-.\LebwohlLasherNumba.py: Size: 25, Steps: 50, T*: 0.500: Order: 0.410, Time: 2.362373 s
-.\LebwohlLasherNumba.py: Size: 45, Steps: 50, T*: 0.500: Order: 0.319, Time: 2.064175 s
-.\LebwohlLasherNumba.py: Size: 100, Steps: 50, T*: 0.500: Order: 0.263, Time: 2.345954 s
-.\LebwohlLasherNumba.py: Size: 210, Steps: 50, T*: 0.500: Order: 0.266, Time: 2.521468 s
-.\LebwohlLasherNumba.py: Size: 460, Steps: 50, T*: 0.500: Order: 0.256, Time: 3.908815 s
-.\LebwohlLasherNumba.py: Size: 1000, Steps: 50, T*: 0.500: Order: 0.253, Time: 9.513828 s
