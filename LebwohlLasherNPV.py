@@ -162,22 +162,47 @@ def one_energy(arr,ix,iy,nmax):
     en += 0.5*(1.0 - 3.0*np.cos(ang)**2)
     return en
 #=======================================================================
-def all_energy(arr,nmax):
+# def all_energy(arr,nmax):
+#     """
+#     Arguments:
+# 	  arr (float(nmax,nmax)) = array that contains lattice data;
+#       nmax (int) = side length of square lattice.
+#     Description:
+#       Function to compute the energy of the entire lattice. Output
+#       is in reduced units (U/epsilon).
+# 	Returns:
+# 	  enall (float) = reduced energy of lattice.
+#     """
+#     enall = 0.0
+#     for i in range(nmax):
+#         for j in range(nmax):
+#             enall += one_energy(arr,i,j,nmax)
+#     return enall
+
+# Vectorised
+
+def all_energy(arr, nmax):
     """
-    Arguments:
-	  arr (float(nmax,nmax)) = array that contains lattice data;
-      nmax (int) = side length of square lattice.
-    Description:
-      Function to compute the energy of the entire lattice. Output
-      is in reduced units (U/epsilon).
-	Returns:
-	  enall (float) = reduced energy of lattice.
+    Vectorized version of all_energy using NumPy's array operations to calculate the energy of the entire lattice.
     """
-    enall = 0.0
-    for i in range(nmax):
-        for j in range(nmax):
-            enall += one_energy(arr,i,j,nmax)
+    #Compute differences between neighboring cells (taking into account periodic boundary conditions)
+    diff_right = arr - np.roll(arr, shift=-1, axis=1)  
+    diff_left = arr - np.roll(arr, shift=1, axis=1)    
+    diff_up = arr - np.roll(arr, shift=-1, axis=0)     
+    diff_down = arr - np.roll(arr, shift=1, axis=0)   
+
+    #NumPy's broadcasting to calculate cosine and energy components
+    cos2_right = np.cos(diff_right)**2
+    cos2_left = np.cos(diff_left)**2
+    cos2_up = np.cos(diff_up)**2
+    cos2_down = np.cos(diff_down)**2
+
+    #Summing contributions to the energy
+    enall = 0.5 * (4 * nmax * nmax - 3 * (cos2_right + cos2_left + cos2_up + cos2_down).sum())
+    
     return enall
+
+
 #=======================================================================
 def get_order(arr,nmax):
     """
@@ -207,52 +232,85 @@ def get_order(arr,nmax):
     eigenvalues,eigenvectors = np.linalg.eig(Qab)
     return eigenvalues.max()
 #=======================================================================
-def MC_step(arr,Ts,nmax):
-    """
-    Arguments:
-	  arr (float(nmax,nmax)) = array that contains lattice data;
-	  Ts (float) = reduced temperature (range 0 to 2);
-      nmax (int) = side length of square lattice.
-    Description:
-      Function to perform one MC step, which consists of an average
-      of 1 attempted change per lattice site.  Working with reduced
-      temperature Ts = kT/epsilon.  Function returns the acceptance
-      ratio for information.  This is the fraction of attempted changes
-      that are successful.  Generally aim to keep this around 0.5 for
-      efficient simulation.
-	Returns:
-	  accept/(nmax**2) (float) = acceptance ratio for current MCS.
-    """
-    #
-    # Pre-compute some random numbers.  This is faster than
-    # using lots of individual calls.  "scale" sets the width
-    # of the distribution for the angle changes - increases
-    # with temperature.
-    scale=0.1+Ts
-    accept = 0
-    xran = np.random.randint(0,high=nmax, size=(nmax,nmax))
-    yran = np.random.randint(0,high=nmax, size=(nmax,nmax))
-    aran = np.random.normal(scale=scale, size=(nmax,nmax))
-    for i in range(nmax):
-        for j in range(nmax):
-            ix = xran[i,j]
-            iy = yran[i,j]
-            ang = aran[i,j]
-            en0 = one_energy(arr,ix,iy,nmax)
-            arr[ix,iy] += ang
-            en1 = one_energy(arr,ix,iy,nmax)
-            if en1<=en0:
-                accept += 1
-            else:
-            # Now apply the Monte Carlo test - compare
-            # exp( -(E_new - E_old) / T* ) >= rand(0,1)
-                boltz = np.exp( -(en1 - en0) / Ts )
+# def MC_step(arr,Ts,nmax):
+#     """
+#     Arguments:
+# 	  arr (float(nmax,nmax)) = array that contains lattice data;
+# 	  Ts (float) = reduced temperature (range 0 to 2);
+#       nmax (int) = side length of square lattice.
+#     Description:
+#       Function to perform one MC step, which consists of an average
+#       of 1 attempted change per lattice site.  Working with reduced
+#       temperature Ts = kT/epsilon.  Function returns the acceptance
+#       ratio for information.  This is the fraction of attempted changes
+#       that are successful.  Generally aim to keep this around 0.5 for
+#       efficient simulation.
+# 	Returns:
+# 	  accept/(nmax**2) (float) = acceptance ratio for current MCS.
+#     """
+#     #
+#     # Pre-compute some random numbers.  This is faster than
+#     # using lots of individual calls.  "scale" sets the width
+#     # of the distribution for the angle changes - increases
+#     # with temperature.
+#     scale=0.1+Ts
+#     accept = 0
+#     xran = np.random.randint(0,high=nmax, size=(nmax,nmax))
+#     yran = np.random.randint(0,high=nmax, size=(nmax,nmax))
+#     aran = np.random.normal(scale=scale, size=(nmax,nmax))
+#     for i in range(nmax):
+#         for j in range(nmax):
+#             ix = xran[i,j]
+#             iy = yran[i,j]
+#             ang = aran[i,j]
+#             en0 = one_energy(arr,ix,iy,nmax)
+#             arr[ix,iy] += ang
+#             en1 = one_energy(arr,ix,iy,nmax)
+#             if en1<=en0:
+#                 accept += 1
+#             else:
+#             # Now apply the Monte Carlo test - compare
+#             # exp( -(E_new - E_old) / T* ) >= rand(0,1)
+#                 boltz = np.exp( -(en1 - en0) / Ts )
 
-                if boltz >= np.random.uniform(0.0,1.0):
-                    accept += 1
-                else:
-                    arr[ix,iy] -= ang
-    return accept/(nmax*nmax)
+#                 if boltz >= np.random.uniform(0.0,1.0):
+#                     accept += 1
+#                 else:
+#                     arr[ix,iy] -= ang
+#     return accept/(nmax*nmax)
+
+def MC_step(arr, Ts, nmax):
+    """
+    Vectorized version of MC_step
+    """
+    # Pre-compute random numbers
+    scale = 0.1 + Ts
+    aran = np.random.normal(scale=scale, size=(nmax, nmax))  # Random angle changes
+
+    # Compute energy before changes
+    energy_before = all_energy(arr, nmax)
+
+    # Apply random angular changes to all sites
+    arr_new = arr + aran
+
+    # Compute energy after changes
+    energy_after = all_energy(arr_new, nmax)
+
+    # Compute the difference in energy
+    delta_energy = energy_after - energy_before
+
+    # Metropolis criterion (acceptance of the new configuration)
+    accept_mask = (delta_energy <= 0) | (np.random.uniform(0, 1, (nmax, nmax)) < np.exp(-delta_energy / Ts))
+
+    # Apply accepted changes to the lattice
+    arr = np.where(accept_mask, arr_new, arr)
+
+    # Calculate acceptance ratio
+    accept_ratio = np.mean(accept_mask)
+    
+    return accept_ratio
+
+
 #=======================================================================
 def main(program, nsteps, nmax, temp, pflag):
     """
