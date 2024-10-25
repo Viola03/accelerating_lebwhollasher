@@ -301,11 +301,7 @@ def MC_step(arr, Ts, nmax):
 
     # Metropolis criterion (acceptance of the new configuration)
     accept_mask = (delta_energy <= 0) | (np.random.uniform(0, 1, (nmax, nmax)) < np.exp(-delta_energy / Ts))
-
-    # Apply accepted changes to the lattice
     arr = np.where(accept_mask, arr_new, arr)
-
-    # Calculate acceptance ratio
     accept_ratio = np.mean(accept_mask)
     
     return accept_ratio
