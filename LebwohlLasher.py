@@ -29,6 +29,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
+from mpi4py import MPI
+
 #=======================================================================
 def initdat(nmax):
     """
@@ -90,7 +92,9 @@ def plotdat(arr,pflag,nmax):
     q = ax.quiver(x, y, u, v, cols,norm=norm, **quiveropts)
     ax.set_aspect('equal')
     plt.show()
+    
 #=======================================================================
+
 def savedat(arr,nsteps,Ts,runtime,ratio,energy,order,nmax):
     """
     Arguments:
