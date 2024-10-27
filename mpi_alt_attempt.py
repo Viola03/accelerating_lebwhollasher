@@ -64,12 +64,12 @@ def MC_step(arr, Ts, nmax, comm, rank, size):
             ang = np.random.normal(scale=scale)
             arr[i, j] += ang
             en1 = one_energy(arr, i, j, nmax, comm, rank, size)
-            if en1 <= en0 or np.exp(-(en1 - en0) / Ts) >= np.random.uniform(0.0, 1.0):
+            if en1 <= en0 or np.exp(-(en1 - en0) / Ts) >= np.random.uniform(0.0, 1.0): 
                 accept += 1
             else:
                 arr[i, j] -= ang
     local_accept_ratio = accept / (arr.shape[0] * nmax)
-    total_accept_ratio = comm.allreduce(local_accept_ratio, op=MPI.SUM) / size
+    total_accept_ratio = comm.allreduce(local_accept_ratio, op=MPI.SUM) / size #Gather
     return total_accept_ratio
 
 #=======================================================================
