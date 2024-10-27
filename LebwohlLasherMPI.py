@@ -294,7 +294,14 @@ def main(program, nsteps, nmax, temp, pflag):
         #Divide the lattice along rows for each rank
         
         rows_per_rank = nmax // size
-        chunks = [lattice[i * rows_per_rank:(i + 1) * rows_per_rank] for i in range(size)]
+        extra_rows = nmax % size
+        chunks = []
+        
+        for i in range(size):
+            start = i * rows_per_rank + min(i, extra_rows)
+            end = start + rows_per_rank + (1 if i < extra_rows else 0)
+            chunks.append(lattice[start:end])
+        
     else:
         lattice = None
         rows_per_rank = nmax // size
@@ -306,7 +313,15 @@ def main(program, nsteps, nmax, temp, pflag):
     local_lattice = comm.scatter(chunks, root=0)
     
     # Ghost rows for periodic boundary conditions
-    local_lattice = np.vstack([local_lattice[-1:], local_lattice, local_lattice[:1]])
+    #local_lattice = np.vstack([local_lattice[-1:], local_lattice, local_lattice[:1]])
+
+    # Ghost rows adjusted for first and last
+    if rank == 0:
+        local_lattice = np.vstack([local_lattice[-1:], local_lattice, local_lattice[1:2]])
+    elif rank == size - 1:
+        local_lattice = np.vstack([local_lattice[-2:-1], local_lattice, local_lattice[:1]])
+    else:
+        local_lattice = np.vstack([local_lattice[-1:], local_lattice, local_lattice[:1]])
 
     local_energy = np.zeros(nsteps + 1, dtype=np.float64)
     local_ratio = np.zeros(nsteps + 1, dtype=np.float64)
@@ -344,18 +359,20 @@ def main(program, nsteps, nmax, temp, pflag):
     comm.Reduce(local_order, order, op=MPI.SUM, root=0)
     
     #Gather local lattices back to rank 0 for the final state
-    gathered_lattices = comm.gather(local_lattice, root=0)
+    gathered_lattices = comm.gather(local_lattice[1:-1], root=0)
 
     #Finalize timing and handle output only on rank 0
     if rank == 0:
         final = time.time()
         runtime = final - initial
-        print(f"{program}: Size: {nmax}, Steps: {nsteps}, T*: {temp:5.3f}, Order: {order[-1]:5.3f}, Time: {runtime:8.6f} s")
+        
         
         #Reconstruct full lattice from gathered local lattices
         lattice = np.vstack(gathered_lattices)
         if lattice.shape[0] != nmax:
             raise ValueError(f"Expected lattice of size {nmax}, but got {lattice.shape[0]}")
+
+        print(f"{program}: Size: {nmax}, Steps: {nsteps}, T*: {temp:5.3f}, Order: {order[-1]:5.3f}, Time: {runtime:8.6f} s")
 
         plotdat(lattice, pflag, nmax)
         savedat(lattice, nsteps, temp, runtime, ratio, energy, order, nmax)
