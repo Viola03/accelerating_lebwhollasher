@@ -31,6 +31,12 @@ import matplotlib as mpl
 
 from mpi4py import MPI
 
+# Initialising MPI
+
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.Get_size()
+
 #=======================================================================
 def initdat(nmax):
     """
@@ -201,7 +207,12 @@ def get_order(arr,nmax):
     # Generate a 3D unit vector for each cell (i,j) and
     # put it in a (3,i,j) array.
     #
-    lab = np.vstack((np.cos(arr),np.sin(arr),np.zeros_like(arr))).reshape(3,nmax,nmax)
+    #print(f"Process {rank}: arr size = {arr.size}, nmax = {nmax}")
+    
+    nmax_rows, nmax_cols = arr.shape  # Obtain partitioned dimensions for subset
+    lab = np.vstack((np.cos(arr), np.sin(arr), np.zeros_like(arr))).reshape(3, nmax_rows, nmax_cols)
+
+    
     for a in range(3):
         for b in range(3):
             for i in range(nmax):
@@ -232,11 +243,14 @@ def MC_step(arr,Ts,nmax):
     # using lots of individual calls.  "scale" sets the width
     # of the distribution for the angle changes - increases
     # with temperature.
+    
     scale=0.1+Ts
     accept = 0
+    
     xran = np.random.randint(0,high=nmax, size=(nmax,nmax))
     yran = np.random.randint(0,high=nmax, size=(nmax,nmax))
     aran = np.random.normal(scale=scale, size=(nmax,nmax))
+    
     for i in range(nmax):
         for j in range(nmax):
             ix = xran[i,j]
@@ -270,34 +284,83 @@ def main(program, nsteps, nmax, temp, pflag):
       This is the main function running the Lebwohl-Lasher simulation.
     Returns:
       NULL
+      
+      Adapted for MPI
     """
-    # Create and initialise lattice
-    lattice = initdat(nmax)
-    # Plot initial frame of lattice
-    plotdat(lattice,pflag,nmax)
-    # Create arrays to store energy, acceptance ratio and order parameter
-    energy = np.zeros(nsteps+1,dtype=np.dtype)
-    ratio = np.zeros(nsteps+1,dtype=np.dtype)
-    order = np.zeros(nsteps+1,dtype=np.dtype)
-    # Set initial values in arrays
-    energy[0] = all_energy(lattice,nmax)
-    ratio[0] = 0.5 # ideal value
-    order[0] = get_order(lattice,nmax)
-
-    # Begin doing and timing some MC steps.
-    initial = time.time()
-    for it in range(1,nsteps+1):
-        ratio[it] = MC_step(lattice,temp,nmax)
-        energy[it] = all_energy(lattice,nmax)
-        order[it] = get_order(lattice,nmax)
-    final = time.time()
-    runtime = final-initial
+    if rank == 0:
+        lattice = initdat(nmax)
+        plotdat(lattice, pflag, nmax)
+        
+        #Divide the lattice along rows for each rank
+        
+        rows_per_rank = nmax // size
+        chunks = [lattice[i * rows_per_rank:(i + 1) * rows_per_rank] for i in range(size)]
+    else:
+        lattice = None
+        rows_per_rank = nmax // size
+        chunks = None
+        
+        
     
-    # Final outputs
-    print("{}: Size: {:d}, Steps: {:d}, T*: {:5.3f}: Order: {:5.3f}, Time: {:8.6f} s".format(program, nmax,nsteps,temp,order[nsteps-1],runtime))
-    # Plot final frame of lattice and generate output file
-    savedat(lattice,nsteps,temp,runtime,ratio,energy,order,nmax)
-    plotdat(lattice,pflag,nmax)
+    #Scatter lattice data to each rank
+    local_lattice = comm.scatter(chunks, root=0)
+    
+    # Ghost rows for periodic boundary conditions
+    local_lattice = np.vstack([local_lattice[-1:], local_lattice, local_lattice[:1]])
+
+    local_energy = np.zeros(nsteps + 1, dtype=np.float64)
+    local_ratio = np.zeros(nsteps + 1, dtype=np.float64)
+    local_order = np.zeros(nsteps + 1, dtype=np.float64)
+
+    #Timing simulation
+    if rank == 0:
+        initial = time.time()
+
+    for it in range(1, nsteps + 1):
+        local_ratio[it] = MC_step(local_lattice, temp, rows_per_rank + 2)
+        local_energy[it] = all_energy(local_lattice[1:-1], rows_per_rank)
+        local_order[it] = get_order(local_lattice[1:-1], rows_per_rank)
+        
+        #Sharing boundary conditions
+        if rank > 0:
+            comm.send(local_lattice[1], dest=rank - 1, tag=11)  
+            local_lattice[0] = comm.recv(source=rank - 1, tag=12) 
+        if rank < size - 1:
+            comm.send(local_lattice[-2], dest=rank + 1, tag=12) 
+            local_lattice[-1] = comm.recv(source=rank + 1, tag=11)  
+
+    #Gather to rank 0
+    if rank == 0:
+        energy = np.zeros(nsteps + 1, dtype=np.float64)
+        ratio = np.zeros(nsteps + 1, dtype=np.float64)
+        order = np.zeros(nsteps + 1, dtype=np.float64)
+    else:
+        energy = None
+        ratio = None
+        order = None
+
+    comm.Reduce(local_energy, energy, op=MPI.SUM, root=0)
+    comm.Reduce(local_ratio, ratio, op=MPI.SUM, root=0)
+    comm.Reduce(local_order, order, op=MPI.SUM, root=0)
+    
+    #Gather local lattices back to rank 0 for the final state
+    gathered_lattices = comm.gather(local_lattice, root=0)
+
+    #Finalize timing and handle output only on rank 0
+    if rank == 0:
+        final = time.time()
+        runtime = final - initial
+        print(f"{program}: Size: {nmax}, Steps: {nsteps}, T*: {temp:5.3f}, Order: {order[-1]:5.3f}, Time: {runtime:8.6f} s")
+        
+        #Reconstruct full lattice from gathered local lattices
+        lattice = np.vstack(gathered_lattices)
+        if lattice.shape[0] != nmax:
+            raise ValueError(f"Expected lattice of size {nmax}, but got {lattice.shape[0]}")
+
+        plotdat(lattice, pflag, nmax)
+        savedat(lattice, nsteps, temp, runtime, ratio, energy, order, nmax)
+    
+    
 #=======================================================================
 # Main part of program, getting command line arguments and calling
 # main simulation function.
