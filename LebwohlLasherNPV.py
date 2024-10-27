@@ -287,19 +287,12 @@ def MC_step(arr, Ts, nmax):
     scale = 0.1 + Ts
     aran = np.random.normal(scale=scale, size=(nmax, nmax))  # Random angle changes
 
-    # Compute energy before changes
     energy_before = all_energy(arr, nmax)
-
-    # Apply random angular changes to all sites
     arr_new = arr + aran
 
-    # Compute energy after changes
     energy_after = all_energy(arr_new, nmax)
 
-    # Compute the difference in energy
     delta_energy = energy_after - energy_before
-
-    # Metropolis criterion (acceptance of the new configuration)
     accept_mask = (delta_energy <= 0) | (np.random.uniform(0, 1, (nmax, nmax)) < np.exp(-delta_energy / Ts))
     arr = np.where(accept_mask, arr_new, arr)
     accept_ratio = np.mean(accept_mask)
