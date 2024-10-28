@@ -10,18 +10,21 @@ Implemented using Pytest, initial main function tests abandoned in favour of ind
 
 ## Cython 
 Run with run script:
+
 `python .\run_lebwhollasher.py <PARAMS>`
 
 - Raw: Compiled with cimports
 - Basic: Applying cdef and no bounds checks
 
 Run in command line with:
+
 `python setup_lebwhollasher.py build_ext -fi`
 
 - Full: Includes OpenMP implementation
 - +MPI: With MPI implementation on MC step
 
-Run in command line with
+Run in command line with:
+
   `mpiexec -n <NPROC> python .\run_lebwhollashermpi.py <PARAMS>`
 
 ## Blue Crystal
