@@ -9,21 +9,25 @@ Contained within the master branch tests/
 Implemented using Pytest, initial main function tests abandoned in favour of individual function tests with standard inputs.
 
 ## Cython 
+Run with run script:
+`python .\run_lebwhollasher.py <PARAMS>`
+
 - Raw: Compiled with cimports
 - Basic: Applying cdef and no bounds checks
 
 Run in command line with:
-`python [setupfile] build_ext -fi --inplace`
+`python setup_lebwhollasher.py build_ext -fi`
 
 - Full: Includes OpenMP implementation
+- With MPI
 
-Run in command line with:
-`mpiexec -n [nproc] python [filename] [params]`
+Run in command line with
+  `mpiexec -n <NPROC> python .\run_lebwhollashermpi.py <PARAMS>`
 
 ## Blue Crystal
 Sample submission scripts included in respective branch.
 
-`sbatch --account=[projectcode] [shellscript].sh`
+`sbatch <FILENAME>.sh`
 
 ## Outputs
 Powershell script adapted across each branch to run respective implementations across a range of grid sizes. txts have been collected in root outputs/. Plots contained in post_processing notebook. 
