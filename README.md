@@ -19,7 +19,7 @@ Run in command line with:
 `python setup_lebwhollasher.py build_ext -fi`
 
 - Full: Includes OpenMP implementation
-- With MPI
+- +MPI: With MPI implementation on MC step
 
 Run in command line with
   `mpiexec -n <NPROC> python .\run_lebwhollashermpi.py <PARAMS>`
