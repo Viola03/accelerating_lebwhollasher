@@ -204,100 +204,111 @@ def all_energy(arr, nmax):
 
 
 #=======================================================================
-def get_order(arr,nmax):
-    """
-    Arguments:
-	  arr (float(nmax,nmax)) = array that contains lattice data;
-      nmax (int) = side length of square lattice.
-    Description:
-      Function to calculate the order parameter of a lattice
-      using the Q tensor approach, as in equation (3) of the
-      project notes.  Function returns S_lattice = max(eigenvalues(Q_ab)).
-	Returns:
-	  max(eigenvalues(Qab)) (float) = order parameter for lattice.
-    """
-    Qab = np.zeros((3,3))
-    delta = np.eye(3,3)
-    #
-    # Generate a 3D unit vector for each cell (i,j) and
-    # put it in a (3,i,j) array.
-    #
-    lab = np.vstack((np.cos(arr),np.sin(arr),np.zeros_like(arr))).reshape(3,nmax,nmax)
-    for a in range(3):
-        for b in range(3):
-            for i in range(nmax):
-                for j in range(nmax):
-                    Qab[a,b] += 3*lab[a,i,j]*lab[b,i,j] - delta[a,b]
-    Qab = Qab/(2*nmax*nmax)
-    eigenvalues,eigenvectors = np.linalg.eig(Qab)
-    return eigenvalues.max()
-#=======================================================================
-# def MC_step(arr,Ts,nmax):
+# def get_order(arr,nmax):
 #     """
 #     Arguments:
 # 	  arr (float(nmax,nmax)) = array that contains lattice data;
-# 	  Ts (float) = reduced temperature (range 0 to 2);
 #       nmax (int) = side length of square lattice.
 #     Description:
-#       Function to perform one MC step, which consists of an average
-#       of 1 attempted change per lattice site.  Working with reduced
-#       temperature Ts = kT/epsilon.  Function returns the acceptance
-#       ratio for information.  This is the fraction of attempted changes
-#       that are successful.  Generally aim to keep this around 0.5 for
-#       efficient simulation.
+#       Function to calculate the order parameter of a lattice
+#       using the Q tensor approach, as in equation (3) of the
+#       project notes.  Function returns S_lattice = max(eigenvalues(Q_ab)).
 # 	Returns:
-# 	  accept/(nmax**2) (float) = acceptance ratio for current MCS.
+# 	  max(eigenvalues(Qab)) (float) = order parameter for lattice.
 #     """
+#     Qab = np.zeros((3,3))
+#     delta = np.eye(3,3)
 #     #
-#     # Pre-compute some random numbers.  This is faster than
-#     # using lots of individual calls.  "scale" sets the width
-#     # of the distribution for the angle changes - increases
-#     # with temperature.
-#     scale=0.1+Ts
-#     accept = 0
-#     xran = np.random.randint(0,high=nmax, size=(nmax,nmax))
-#     yran = np.random.randint(0,high=nmax, size=(nmax,nmax))
-#     aran = np.random.normal(scale=scale, size=(nmax,nmax))
-#     for i in range(nmax):
-#         for j in range(nmax):
-#             ix = xran[i,j]
-#             iy = yran[i,j]
-#             ang = aran[i,j]
-#             en0 = one_energy(arr,ix,iy,nmax)
-#             arr[ix,iy] += ang
-#             en1 = one_energy(arr,ix,iy,nmax)
-#             if en1<=en0:
-#                 accept += 1
-#             else:
-#             # Now apply the Monte Carlo test - compare
-#             # exp( -(E_new - E_old) / T* ) >= rand(0,1)
-#                 boltz = np.exp( -(en1 - en0) / Ts )
+#     # Generate a 3D unit vector for each cell (i,j) and
+#     # put it in a (3,i,j) array.
+#     #
+#     lab = np.vstack((np.cos(arr),np.sin(arr),np.zeros_like(arr))).reshape(3,nmax,nmax)
+#     for a in range(3):
+#         for b in range(3):
+#             for i in range(nmax):
+#                 for j in range(nmax):
+#                     Qab[a,b] += 3*lab[a,i,j]*lab[b,i,j] - delta[a,b]
+#     Qab = Qab/(2*nmax*nmax)
+#     eigenvalues,eigenvectors = np.linalg.eig(Qab)
+#     return eigenvalues.max()
 
-#                 if boltz >= np.random.uniform(0.0,1.0):
-#                     accept += 1
-#                 else:
-#                     arr[ix,iy] -= ang
-#     return accept/(nmax*nmax)
+def get_order(arr,nmax):
+  lab = np.vstack((np.cos(arr),np.sin(arr),np.zeros_like(arr))).reshape(3,nmax,nmax)
+  Qab = np.einsum('aij, bij -> ab', lab, lab) * 3 - np.eye(3)
+  
+  Qab /= (2 * nmax * nmax) #Normalised
+  
+  eigenvalues = np.linalg.eigvalsh(Qab) 
+  return eigenvalues.max()
+  
 
-def MC_step(arr, Ts, nmax):
+#=======================================================================
+def MC_step(arr,Ts,nmax):
     """
-    Vectorized version of MC_step
+    Arguments:
+	  arr (float(nmax,nmax)) = array that contains lattice data;
+	  Ts (float) = reduced temperature (range 0 to 2);
+      nmax (int) = side length of square lattice.
+    Description:
+      Function to perform one MC step, which consists of an average
+      of 1 attempted change per lattice site.  Working with reduced
+      temperature Ts = kT/epsilon.  Function returns the acceptance
+      ratio for information.  This is the fraction of attempted changes
+      that are successful.  Generally aim to keep this around 0.5 for
+      efficient simulation.
+	Returns:
+	  accept/(nmax**2) (float) = acceptance ratio for current MCS.
     """
-    # Pre-compute random numbers
-    scale = 0.1 + Ts
-    aran = np.random.normal(scale=scale, size=(nmax, nmax))  # Random angle changes
+    #
+    # Pre-compute some random numbers.  This is faster than
+    # using lots of individual calls.  "scale" sets the width
+    # of the distribution for the angle changes - increases
+    # with temperature.
+    scale=0.1+Ts
+    accept = 0
+    xran = np.random.randint(0,high=nmax, size=(nmax,nmax))
+    yran = np.random.randint(0,high=nmax, size=(nmax,nmax))
+    aran = np.random.normal(scale=scale, size=(nmax,nmax))
+    for i in range(nmax):
+        for j in range(nmax):
+            ix = xran[i,j]
+            iy = yran[i,j]
+            ang = aran[i,j]
+            en0 = one_energy(arr,ix,iy,nmax)
+            arr[ix,iy] += ang
+            en1 = one_energy(arr,ix,iy,nmax)
+            if en1<=en0:
+                accept += 1
+            else:
+            # Now apply the Monte Carlo test - compare
+            # exp( -(E_new - E_old) / T* ) >= rand(0,1)
+                boltz = np.exp( -(en1 - en0) / Ts )
 
-    energy_before = all_energy(arr, nmax)
-    arr_new = arr + aran
+                if boltz >= np.random.uniform(0.0,1.0):
+                    accept += 1
+                else:
+                    arr[ix,iy] -= ang
+    return accept/(nmax*nmax)
 
-    energy_after = all_energy(arr_new, nmax)
+# def MC_step(arr, Ts, nmax):
+#     """
+#     Vectorized version of MC_step
+#     """
+#     # Pre-compute random numbers
+#     scale = 0.1 + Ts
+#     aran = np.random.normal(scale=scale, size=(nmax, nmax))  # Random angle changes
 
-    delta_energy = energy_after - energy_before
-    accept_mask = (delta_energy <= 0) | (np.random.uniform(0, 1, (nmax, nmax)) < np.exp(-delta_energy / Ts))
-    arr = np.where(accept_mask, arr_new, arr)
-    accept_ratio = np.mean(accept_mask)
+#     energy_before = all_energy(arr, nmax)
+#     arr_new = arr + aran
+
+#     energy_after = all_energy(arr_new, nmax)
+
+#     delta_energy = energy_after - energy_before
+#     accept_mask = (delta_energy <= 0) | (np.random.uniform(0, 1, (nmax, nmax)) < np.exp(-delta_energy / Ts))
+#     arr = np.where(accept_mask, arr_new, arr)
+#     accept_ratio = np.mean(accept_mask)
     
-    return accept_ratio
+#     return accept_ratio
 
 
 #=======================================================================
