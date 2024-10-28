@@ -9,7 +9,7 @@ cimport numpy as np
 cimport cython
 
 from cython.parallel import prange
-from libc.math cimport cos, sin, exp
+from libc.math cimport cos, sin, exp, pi
 
 cdef extern from "omp.h":
   void omp_set_num_threads(int numthreads)
@@ -19,7 +19,7 @@ cpdef int get_default_thread_count():
     return omp_get_max_threads()
 
 #=======================================================================
-def initdat(int nmax):
+cdef initdat(int nmax):
     """
     Arguments:
       nmax (int) = size of lattice to create (nmax,nmax).
@@ -30,7 +30,7 @@ def initdat(int nmax):
 	Returns:
 	  arr (float(nmax,nmax)) = array to hold lattice.
     """
-    cdef np.ndarray[np.float64_t, ndim=2] arr = np.random.random_sample((nmax,nmax))*2.0*np.pi
+    cdef np.ndarray[double, ndim=2] arr = np.random.random_sample((nmax,nmax))*2.0*pi
     return arr
 #=======================================================================
 def plotdat(arr,pflag,nmax):
@@ -119,8 +119,7 @@ def savedat(arr,nsteps,Ts,runtime,ratio,energy,order,nmax):
 #=======================================================================
 
 @cython.boundscheck(False)
-
-cpdef double one_energy(double[:,:] arr, int ix, int iy, int nmax) nogil:
+cdef double one_energy(double[:,:] arr, int ix, int iy, int nmax) nogil:
   
     cdef double en = 0.0
     
@@ -146,17 +145,26 @@ cpdef double one_energy(double[:,:] arr, int ix, int iy, int nmax) nogil:
   
 #=======================================================================
 @cython.boundscheck(False)
-cpdef double all_energy(double[:,:] arr, int nmax, int numthreads):
+@cython.wraparound(False)
+cdef double all_energy(double[:,:] arr, int nmax, int numthreads):
+    
     cdef double enall = 0.0
     cdef int i, j
     
+    #OpenMP
     for i in prange(nmax, nogil=True, num_threads=numthreads):
         for j in range(nmax):
             enall += one_energy(arr,i,j,nmax)
     return enall
+    
+    # for i in range(nmax):
+    #     for j in range(nmax):
+    #         enall += one_energy(arr,i,j,nmax)
+    # return enall
+
 #=======================================================================
 @cython.boundscheck(False)
-cpdef double get_order(double[:,:] arr, int nmax):
+cdef double get_order(double[:,:] arr, int nmax):
     cdef np.ndarray[np.float64_t, ndim=2] Qab = np.zeros((3,3))
     cdef np.ndarray[np.float64_t, ndim=2] delta = np.eye(3,3)
     #
@@ -180,14 +188,19 @@ cpdef double get_order(double[:,:] arr, int nmax):
     return eigenvalues.max()
 #=======================================================================
 @cython.boundscheck(False)
-def MC_step(arr,Ts,nmax):
+@cython.wraparound(False)
+cdef double MC_step(np.ndarray[double, ndim=2] arr, double Ts,int nmax):
   
-    scale=0.1+Ts
-    accept = 0
+    cdef double scale=0.1+Ts
+    cdef double accept = 0
+    cdef double local_accept
     
-    xran = np.random.randint(0,high=nmax, size=(nmax,nmax))
-    yran = np.random.randint(0,high=nmax, size=(nmax,nmax))
-    aran = np.random.normal(scale=scale, size=(nmax,nmax))
+    cdef int[:, :] xran = np.random.randint(0,high=nmax, size=(nmax,nmax))
+    cdef int[:, :] yran = np.random.randint(0,high=nmax, size=(nmax,nmax))
+    cdef double[:, :] aran = np.random.normal(scale=scale, size=(nmax,nmax))
+    
+    cdef int i, j, ix, iy
+    cdef double ang, en0, en1, boltz, rand_num
     
     for i in range(nmax):
         for j in range(nmax):
@@ -207,20 +220,50 @@ def MC_step(arr,Ts,nmax):
                 else:
                     arr[ix,iy] -= ang
     return accept/(nmax*nmax)
+    
+    # # OpenMP
+    # for i in prange(nmax, nogil=True):
+    #     local_accept = 0
+        
+    #     for j in range(nmax):
+    #         ix = xran[i,j]
+    #         iy = yran[i,j]
+    #         ang = aran[i,j]
+    #         en0 = one_energy(arr,ix,iy,nmax)
+    #         arr[ix,iy] += ang
+    #         en1 = one_energy(arr,ix,iy,nmax)
+    #         if en1<=en0:
+    #             local_accept += 1
+    #         else:
+    #             with gil:
+    #                 boltz = np.exp( -(en1 - en0) / Ts )
+
+    #                 if boltz >= np.random.uniform(0.0,1.0):
+    #                     local_accept += 1
+    #                 else:
+    #                     arr[ix,iy] -= ang
+    #     with gil:
+    #         accept += local_accept  # Accumulate into the main accept variable
+            
+    return accept/(nmax*nmax)
 #=======================================================================
-def main(program, nsteps, nmax, temp, pflag):
+def main(program, int nsteps, int nmax, double temp, int pflag, int numthreads):
     # Numthreads for openmp
-    numthreads = get_default_thread_count()
+    
+    #numthreads = get_default_thread_count()
     #print(get_default_thread_count())
     
     # Create and initialise lattice
     lattice = initdat(nmax)
+    
     # Plot initial frame of lattice
     plotdat(lattice,pflag,nmax)
+    
     # Create arrays to store energy, acceptance ratio and order parameter
     energy = np.zeros(nsteps+1,dtype=np.dtype)
     ratio = np.zeros(nsteps+1,dtype=np.dtype)
     order = np.zeros(nsteps+1,dtype=np.dtype)
+    
     # Set initial values in arrays
     energy[0] = all_energy(lattice,nmax,numthreads)
     ratio[0] = 0.5 # ideal value
@@ -245,13 +288,14 @@ def main(program, nsteps, nmax, temp, pflag):
 # main simulation function.
 #
 if __name__ == '__main__':
-    if int(len(sys.argv)) == 5:
+    if int(len(sys.argv)) == 6:
         PROGNAME = sys.argv[0]
         ITERATIONS = int(sys.argv[1])
         SIZE = int(sys.argv[2])
         TEMPERATURE = float(sys.argv[3])
         PLOTFLAG = int(sys.argv[4])
-        main(PROGNAME, ITERATIONS, SIZE, TEMPERATURE, PLOTFLAG)
+        NUMTHREADS = int(sys.argv[5]) #New argument for threads
+        main(PROGNAME, ITERATIONS, SIZE, TEMPERATURE, PLOTFLAG, NUMTHREADS)
     else:
-        print("Usage: python {} <ITERATIONS> <SIZE> <TEMPERATURE> <PLOTFLAG>".format(sys.argv[0]))
+        print("Usage: python {} <ITERATIONS> <SIZE> <TEMPERATURE> <PLOTFLAG> <NUMTHREADS>".format(sys.argv[0]))
 #=======================================================================
