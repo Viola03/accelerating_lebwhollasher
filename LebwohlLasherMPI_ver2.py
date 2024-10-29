@@ -221,9 +221,17 @@ def MC_step(arr,Ts,nmax):
     rank = comm.Get_rank()
     size = comm.Get_size()
     
-    step_per_process = nmax * nmax // size
+    step_per_process = nmax // size
     start_idx = rank * step_per_process
-    end_idx = (rank + 1) * step_per_process if rank != size - 1 else nmax * nmax
+    
+    #end_idx = (rank + 1) * step_per_process if rank != size - 1 else nmax * nmax
+    
+    end_idx = 0
+    
+    if rank < size-1:
+        end_idx += (rank+1)*step_per_process
+    else:
+        end_idx += nmax
     
     scale=0.1+Ts
     accept = 0
@@ -254,7 +262,7 @@ def MC_step(arr,Ts,nmax):
     #print(f"[Rank {rank}] Accepted moves: {accept} out of {end_idx - start_idx}")
 
     #acceptance ratios from all processes
-    total_accept = comm.reduce(accept, op=MPI.SUM, root=0)
+    total_accept = comm.allreduce(accept, op=MPI.SUM)
     
     if rank == 0:
         total_ratio = total_accept / (nmax * nmax)

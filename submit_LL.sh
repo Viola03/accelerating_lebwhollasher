@@ -13,6 +13,10 @@
 # (The %j is replaced by the job id.)
 SBATCH -o LLMPI_out_%j.txt
 
+# Just in case this is not loaded already...
+#module load languages/miniforge3/2020-3.8.5
+module  add languages/python/3.12.3
+
 # Change to working directory, where the job was submitted from.
 cd "${SLURM_SUBMIT_DIR}"
 
