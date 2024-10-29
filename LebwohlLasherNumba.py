@@ -1,25 +1,5 @@
 """
-Basic Python Lebwohl-Lasher code.  Based on the paper 
-P.A. Lebwohl and G. Lasher, Phys. Rev. A, 6, 426-429 (1972).
-This version in 2D.
-
-Run at the command line by typing:
-
-python LebwohlLasher.py <ITERATIONS> <SIZE> <TEMPERATURE> <PLOTFLAG>
-
-where:
-  ITERATIONS = number of Monte Carlo steps, where 1MCS is when each cell
-      has attempted a change once on average (i.e. SIZE*SIZE attempts)
-  SIZE = side length of square lattice
-  TEMPERATURE = reduced temperature in range 0.0 - 2.0.
-  PLOTFLAG = 0 for no plot, 1 for energy plot and 2 for angle plot.
-  
-The initial configuration is set at random. The boundaries
-are periodic throughout the simulation.  During the
-time-stepping, an array containing two domains is used; these
-domains alternate between old data and new data.
-
-SH 16-Oct-23
+Numba Optimised
 """
 
 import sys
@@ -29,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
-from numba import njit, prange, jit
+from numba import njit, prange, jit, set_num_threads
 
 
 #=======================================================================
@@ -241,7 +221,7 @@ def box_muller_normal(scale, nmax):
 #=======================================================================
 
 @njit(parallel=True)
-def MC_step(arr,Ts,nmax):
+def MC_step(arr,Ts,nmax, num_threads):
     """
     Arguments:
 	  arr (float(nmax,nmax)) = array that contains lattice data;
@@ -262,6 +242,9 @@ def MC_step(arr,Ts,nmax):
     # using lots of individual calls.  "scale" sets the width
     # of the distribution for the angle changes - increases
     # with temperature.
+    
+    set_num_threads(num_threads)
+    
     scale=0.1+Ts
     accept = 0
     
@@ -285,8 +268,6 @@ def MC_step(arr,Ts,nmax):
             if en1<=en0:
                 accept += 1
             else:
-            # Now apply the Monte Carlo test - compare
-            # exp( -(E_new - E_old) / T* ) >= rand(0,1)
                 boltz = np.exp( -(en1 - en0) / Ts )
 
                 if boltz >= np.random.uniform(0.0,1.0):
@@ -319,7 +300,7 @@ def MC_step(arr,Ts,nmax):
     # return accept/(nmax*nmax)
   
 #=======================================================================
-def main(program, nsteps, nmax, temp, pflag):
+def main(program, nsteps, nmax, temp, pflag, num_threads):
     """
     Arguments:
 	  program (string) = the name of the program;
@@ -348,7 +329,7 @@ def main(program, nsteps, nmax, temp, pflag):
     # Begin doing and timing some MC steps.
     initial = time.time()
     for it in range(1,nsteps+1):
-        ratio[it] = MC_step(lattice,temp,nmax)
+        ratio[it] = MC_step(lattice,temp,nmax,num_threads)
         energy[it] = all_energy(lattice,nmax)
         order[it] = get_order(lattice,nmax)
     final = time.time()
@@ -364,13 +345,14 @@ def main(program, nsteps, nmax, temp, pflag):
 # main simulation function.
 #
 if __name__ == '__main__':
-    if int(len(sys.argv)) == 5:
+    if int(len(sys.argv)) == 6:
         PROGNAME = sys.argv[0]
         ITERATIONS = int(sys.argv[1])
         SIZE = int(sys.argv[2])
         TEMPERATURE = float(sys.argv[3])
         PLOTFLAG = int(sys.argv[4])
-        main(PROGNAME, ITERATIONS, SIZE, TEMPERATURE, PLOTFLAG)
+        NUMTHREADS = int(sys.argv[5])
+        main(PROGNAME, ITERATIONS, SIZE, TEMPERATURE, PLOTFLAG, NUMTHREADS)
     else:
-        print("Usage: python {} <ITERATIONS> <SIZE> <TEMPERATURE> <PLOTFLAG>".format(sys.argv[0]))
+        print("Usage: python {} <ITERATIONS> <SIZE> <TEMPERATURE> <PLOTFLAG> <NUMTHREADS>".format(sys.argv[0]))
 #=======================================================================
