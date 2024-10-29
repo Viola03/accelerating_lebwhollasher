@@ -1,8 +1,6 @@
 import numpy as np
 import pytest
 
-# Assuming these functions are defined in a module named 'lebwohl_lasher'
-
 from LebwohlLasher import one_energy, all_energy
 
 # def test_one_energy():
