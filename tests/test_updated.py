@@ -3,24 +3,15 @@ import pytest
 
 from LebwohlLasher import one_energy, all_energy
 
-# def test_one_energy():
-#     """Test the one_energy function with standard input."""
-#     arr = np.array([[0, np.pi / 2], [np.pi, 3 * np.pi / 2]])
-#     nmax = arr.shape[0]
+def test_one_energy():
+    """Test the one_energy function with a standard input."""
+    nmax = 5
+    np.random.seed(42)
+    arr = np.random.random_sample((nmax, nmax))*2.0*np.pi
+    ix, iy = 2, 2
     
-#     # Testing energy of cell (0, 0)
-#     energy_00 = one_energy(arr, 0, 0, nmax)
-    
-#     # Expected energy calculation for cell (0, 0)
-#     expected_energy_00 = (
-#         0.5 * (1.0 - 3.0 * np.cos(0 - (np.pi / 2)) ** 2) +  # Interaction with (1,0)
-#         0.5 * (1.0 - 3.0 * np.cos(0 - np.pi) ** 2) +        # Interaction with (n-1,0)
-#         0.5 * (1.0 - 3.0 * np.cos(0 - 0) ** 2) +             # Interaction with (0,1)
-#         0.5 * (1.0 - 3.0 * np.cos(0 - 0) ** 2)                # Interaction with (0,n-1)
-#     )
-
-#     # Adjust expected energy based on calculated contributions
-#     assert np.isclose(energy_00, expected_energy_00), f"Unexpected energy for cell (0, 0): {energy_00}"
+    energy = one_energy(arr, ix, iy, nmax)
+    assert energy == -1.0512936529391477, , f"Unexpected one energy: {one_energy}"
 
 def test_all_energy():
     """Test the all_energy function with a simple lattice."""
